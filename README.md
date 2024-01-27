@@ -443,3 +443,4 @@ if __name__ == "__main__":
     print('Polling...')
     app.run_polling() 
 ```
+![Telegram.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/Telegram.PNG)
