@@ -80,7 +80,7 @@ dfs = load_data()
 dfs = clean_data(dfs)
 
 
-# Transformatio and plot
+# Transformation and plot
 def malaysia_trend_per_year():
 
     total_per_year = dfs[1].groupby(['state', 'year'])['daily'].sum().reset_index()
