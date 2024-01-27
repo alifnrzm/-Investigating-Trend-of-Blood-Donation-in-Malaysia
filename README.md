@@ -9,13 +9,14 @@ Libraries imported are mainly used for ingesting, cleaning, transform, plot and 
 
 ```python
 import requests # HTTP connection
-import pandas # data manipulation
-import pyarrow.parquet as pq 
+import pandas as pd # data manipulation
+import pyarrow.parquet as pq
 from datetime import datetime
 
 
 import matplotlib.pyplot as plt # plotting library
 import matplotlib.cm as cm # colormap for mapping numerical values to color for visual
+import seaborn as sns
 import numpy as np 
 from numpy.polynomial.polynomial import Polynomial # Used in creating trendline for plotting
 
@@ -28,7 +29,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 
 ```python
-BOT_TOKEN = '?????'
+BOT_TOKEN = '6568997087:AAEw8fhrqCU2-a5UQZezbpmTEU8bIY7vyzU'
 ```
 
 Since the data is updated daily, using HTTp conector to ingest the data is a viable option as the cript will easily callout the URL given and assign them accordingly to naming convention for ease of processing
@@ -100,17 +101,6 @@ dfs = load_data()
 dfs = clean_data(dfs)
 ```
 
-Assigning each of the dataframe in element to naming convention so that it is easier to diffrentiate each of the dataframe
-
-
-```python
-donations_by_facility_df = dfs[0]
-donations_by_state_df = dfs[1]
-new_donors_facility_df = dfs[2]
-new_donors_state_df = dfs[3]
-regular_donor_df = dfs[4]
-```
-
 # Data transformation and Data visualisation
 
 In this section, transformation is done followed by visualisation group in to functions
@@ -153,7 +143,10 @@ def donor_retention():
     regular_donors = donation_freq[donation_freq['donation_count'] >= 3]
 
     percentage_regular_donors_per_year = (
-        donation_freq[donation_freq['donor_id'].isin(regular_donors['donor_id'])].groupby('year')['donor_id'].nunique() / donation_freq.groupby('year')['donor_id'].nunique() * 100)
+        donation_freq[donation_freq['donor_id'].isin(regular_donors['donor_id'])]
+        .groupby('year')['donor_id']
+        .nunique() / donation_freq.groupby('year')['donor_id'].nunique() * 100
+    )
 
     
     plt.figure(figsize=(10, 6))
@@ -240,7 +233,6 @@ def percentage_per_hospital():
     hospital_total['total all'] = hospital_total['daily'].sum()
 
     hospital_total['percentage'] = (hospital_total['daily']/hospital_total['total all']) * 100
-    
     hospital_total = hospital_total.sort_values(by='percentage', ascending = True)
 
     state_colors = {
@@ -284,6 +276,26 @@ def percentage_per_hospital():
     plt.savefig('hospitaltrend.png')
 ```
 
+This analysis is about finding the trend of new donors donation trend which is grouped by their age. We use pivot method to find their total value and plotted a line graph from 2006 until 2024
+
+
+```python
+my_age_group = dfs[3][dfs[3]['state'] == 'Malaysia']
+melted_age_group = pd.melt(my_age_group, id_vars=['date','year'], value_vars=['17-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', 'other'])
+grouped_melted_age = melted_age_group.groupby(['variable','year'])['value'].sum().reset_index()
+plt.figure(figsize=(12,6))
+sns.lineplot(x='year', y='value', hue='variable', data=grouped_melted_age, marker='o')
+
+plt.title('New Donors Trends by Age Group (2006-2024)')
+plt.xlabel('Year')
+plt.ylabel('Number of Donations')
+plt.legend(title='Age Group', bbox_to_anchor=(1.05,1), loc='upper left')
+
+plt.xticks(ticks=grouped_melted_age['year'].unique(), rotation=45)
+
+plt.savefig('newdonors.png')
+```
+
 For each of the asynchronous function to implement in telegram bot, each of the plot have individual function of their own. the plot functions are called in thorugh update and context parameters. Which represent about incoming update and the context of the bot. context.bot is used to send the saved plot and this function is saved so that we create a trigger word later.
 
 
@@ -292,8 +304,8 @@ async def mytrend(update, context):
     
     malaysia_trend_per_year()
     plt.close()
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = f"Malaysia trend data ingested at: {timestamp}"
+    last_updated_date = dfs[1]['date'].max().strftime("%Y-%m-%d")
+    message = f"Malaysia trend data updated at: {last_updated_date}"
     reason =  f"This graph shows the trend of blood donation number from 2006 until latest 2024 with added trendline to see increase in donation"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("mytrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
@@ -305,9 +317,9 @@ async def mytrend(update, context):
 async def regtrend(update, context):
     donor_retention()
     plt.close()
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = f"Regular donor trend data ingested at: {timestamp}"
-    reason = f"This graph is showing regular donors trend among registered donors from 2012 to latest 2024"
+    last_updated_date = dfs[4]['visit_date'].max().strftime("%Y-%m-%d")
+    message = f"Regular donor trend data updated at: {last_updated_date}"
+    reason = f"This graph is showing regular donors trend among registered donors from 2012 to latest 2024. Assuming that 3 or more is considered as regular donation"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("regtrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
@@ -319,8 +331,8 @@ async def statetrend(update, context):
     
     percentage_per_state()
     plt.close()
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = f"State trend data ingested at: {timestamp}"
+    last_updated_date = dfs[1]['date'].max().strftime("%Y-%m-%d")
+    message = f"State trend data updated at: {last_updated_date}"
     reason = f"This graphs represents the % of donation per state from 2006 until latest 2024 with highest donors on top"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("statetrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
@@ -333,12 +345,75 @@ async def hospitaltrend(update, context):
     
     percentage_per_hospital()
     plt.close()
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = f"Hospital trend data ingested at: {timestamp}"
+    last_updated_date = dfs[0]['date'].max().strftime("%Y-%m-%d")
+    message = f"Hospital trend data updated at: {last_updated_date}"
     reason = f"This graphs represents the % of donation per hospital from 2006 until latest 2024 with highest donors on top"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("hospitaltrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+```
+
+
+```python
+async def agetrend(update, context):
+
+    new_age_group_trend()
+    plt.close()
+    last_updated_date = dfs[3]['date'].max().strftime("%Y-%m-%d")
+    message = f"New donors age group data updated at: {last_updated_date}"
+    reason = f"This graph represents the total donation of new donors in age group from 2006 until latest 2024"
+    await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("newdonors.png", "rb"))
+    await context.bot.send_message(chat_id=update.message.chat_id, text=message)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+```
+
+
+```python
+async def startcommand(update, context):
+
+    message = f"Hi, as of right now I only take 5 commands where you can find by typing / in the chat box. These 5 commands are the output of finding the blood donation trend in Malaysia"
+    message2 = f"Alternatively, you can click on the menu button on the left of the check box to select which output you prefer to see"
+    message3 = f"Please note that it might take a while for the script to send the output"
+    await context.bot.send_message(chat_id=update.message.chat_id, text=message)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=message2)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=message3)
+```
+
+
+```python
+async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    print(f'Update {update} caused error {context.error}')
+```
+
+
+```python
+# Responses
+def handle_response(text: str) -> str:
+    processed: str = text.lower()
+
+    if 'hello' in processed:
+        return 'Hey there! Please type /start to begin'
+    
+    return 'Please type /start to begin'
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message_type: str = update.message.chat.type
+    text: str = update.message.text
+
+    print(f'User ({update.message.chat.id}) un {message_type}: "{text}"')
+
+    if message_type == 'group':
+        if BOT_USERNAME in text: 
+            new_text: str = text.replace(BOT_USERNAME, '').strip()
+            response: str = handle_response(new_text)
+        else:
+            return
+    else:
+        response: str = handle_response(text)
+    
+    print('Bot:', response)
+    await update.message.reply_text(response)
 ```
 
 This standalone program is what connects to the telegram bot where we construct an instance class. configure through the unique bot token and build it. CommandHandler is used to register a command linking to the respective function. So we have to make sure that both the script and bot command to be the same so that the bot will return the aynchrounous function. A polling loop for the bot is initiated so that it continuously check for new updates and respond to the commands.
@@ -353,6 +428,11 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("regular", regtrend))
     app.add_handler(CommandHandler("state", statetrend))
     app.add_handler(CommandHandler("hospital", hospitaltrend))
+    app.add_handler(CommandHandler("newdonors", agetrend))
+    app.add_handler(CommandHandler("start", startcommand))
 
-    app.run_polling()
+    app.add_error_handler(error)
+
+    print('Polling...')
+    app.run_polling() 
 ```
