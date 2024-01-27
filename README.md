@@ -29,7 +29,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 
 ```python
-BOT_TOKEN = '???????'
+BOT_TOKEN = '6568997087:AAEw8fhrqCU2-a5UQZezbpmTEU8bIY7vyzU'
+BOT_USERNAME = '@alifnrzm_bot'
 ```
 
 Since the data is updated daily, using HTTp conector to ingest the data is a viable option as the cript will easily callout the URL given and assign them accordingly to naming convention for ease of processing
