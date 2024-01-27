@@ -29,7 +29,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 
 ```python
-BOT_TOKEN = '6568997087:AAEw8fhrqCU2-a5UQZezbpmTEU8bIY7vyzU'
+BOT_TOKEN = '???????'
 BOT_USERNAME = '@alifnrzm_bot'
 ```
 
