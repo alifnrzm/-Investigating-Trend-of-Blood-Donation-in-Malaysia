@@ -133,6 +133,7 @@ def malaysia_trend_per_year():
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.savefig('mytrend.png')
 ```
+![mytrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/mytrend.png)
 
 For donor retention, the aim is to find the percentage of regular donors who donate more than 3 times per year out of all the registered donors. This is to analyse how well Malaysia retains donors to regularly to donate blood. For this, column year and donor id are aggregated and finding the number of occurrences of each aggregate. From that, the percentage is calculated to find the rate for each year from 2012 until latest 2024.The dataset used in this analysis is from granular data
 
@@ -164,6 +165,8 @@ def donor_retention():
     plt.tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
     plt.savefig('regtrend.png')
 ```
+![regtrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/regtrend.png)
+
 
 To find state trend, the state is aggregated and daily donations is totaled based on each state through 2006 until latest 2024. the aim is to find which state contibuted most in donation percentages. For this, a horizontal bar plot is created.
 
@@ -196,6 +199,7 @@ def percentage_per_state():
     plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.savefig('statetrend.png')
 ```
+![statetrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/statetrend.png)
 
 In this analysis, we are trying to find which hospital or facility contributed to the blood donation total from 2006 until latest 2024.we dive deeper and aggregate the facility based on their respective states. Similarly a horizontal bar plot is created with color coded bars based on their respective states.
 
@@ -276,6 +280,7 @@ def percentage_per_hospital():
     ax.grid(axis='x')
     plt.savefig('hospitaltrend.png')
 ```
+![hospitaltrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/hospitaltrend.png)
 
 This analysis is about finding the trend of new donors donation trend which is grouped by their age. We use pivot method to find their total value and plotted a line graph from 2006 until 2024
 
@@ -296,6 +301,7 @@ plt.xticks(ticks=grouped_melted_age['year'].unique(), rotation=45)
 
 plt.savefig('newdonors.png')
 ```
+![newdonors.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/newdonors.png)
 
 For each of the asynchronous function to implement in telegram bot, each of the plot have individual function of their own. the plot functions are called in thorugh update and context parameters. Which represent about incoming update and the context of the bot. context.bot is used to send the saved plot and this function is saved so that we create a trigger word later.
 
