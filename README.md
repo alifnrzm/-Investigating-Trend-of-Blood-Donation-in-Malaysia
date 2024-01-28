@@ -10,8 +10,8 @@ Libraries imported are mainly used for ingesting, cleaning, transform, plot and 
 ```python
 import requests # HTTP connection
 import pandas as pd # data manipulation
-import pyarrow.parquet as pq
-from datetime import datetime
+import pyarrow.parquet as pq 
+import datetime  as dt
 
 
 import matplotlib.pyplot as plt # plotting library
@@ -23,13 +23,12 @@ from numpy.polynomial.polynomial import Polynomial # Used in creating trendline 
 # Necessary for building and running telegram bot
 from bob_telegram_tools.bot import TelegramBot
 from telegram import Update, InputFile
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Application, MessageHandler, filters
 ```
 
 
 ```python
-BOT_TOKEN = '???????'
+BOT_TOKEN = '6568997087:AAEw8fhrqCU2-a5UQZezbpmTEU8bIY7vyzU'
 BOT_USERNAME = '@alifnrzm_bot'
 ```
 
@@ -133,7 +132,6 @@ def malaysia_trend_per_year():
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.savefig('mytrend.png')
 ```
-![mytrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/mytrend.png)
 
 For donor retention, the aim is to find the percentage of regular donors who donate more than 3 times per year out of all the registered donors. This is to analyse how well Malaysia retains donors to regularly to donate blood. For this, column year and donor id are aggregated and finding the number of occurrences of each aggregate. From that, the percentage is calculated to find the rate for each year from 2012 until latest 2024.The dataset used in this analysis is from granular data
 
@@ -165,8 +163,6 @@ def donor_retention():
     plt.tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
     plt.savefig('regtrend.png')
 ```
-![regtrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/regtrend.png)
-
 
 To find state trend, the state is aggregated and daily donations is totaled based on each state through 2006 until latest 2024. the aim is to find which state contibuted most in donation percentages. For this, a horizontal bar plot is created.
 
@@ -199,7 +195,6 @@ def percentage_per_state():
     plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.savefig('statetrend.png')
 ```
-![statetrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/statetrend.png)
 
 In this analysis, we are trying to find which hospital or facility contributed to the blood donation total from 2006 until latest 2024.we dive deeper and aggregate the facility based on their respective states. Similarly a horizontal bar plot is created with color coded bars based on their respective states.
 
@@ -280,28 +275,86 @@ def percentage_per_hospital():
     ax.grid(axis='x')
     plt.savefig('hospitaltrend.png')
 ```
-![hospitaltrend.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/hospitaltrend.png)
 
 This analysis is about finding the trend of new donors donation trend which is grouped by their age. We use pivot method to find their total value and plotted a line graph from 2006 until 2024
 
 
 ```python
-my_age_group = dfs[3][dfs[3]['state'] == 'Malaysia']
-melted_age_group = pd.melt(my_age_group, id_vars=['date','year'], value_vars=['17-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', 'other'])
-grouped_melted_age = melted_age_group.groupby(['variable','year'])['value'].sum().reset_index()
-plt.figure(figsize=(12,6))
-sns.lineplot(x='year', y='value', hue='variable', data=grouped_melted_age, marker='o')
+def new_age_group_trend():
 
-plt.title('New Donors Trends by Age Group (2006-2024)')
-plt.xlabel('Year')
-plt.ylabel('Number of Donations')
-plt.legend(title='Age Group', bbox_to_anchor=(1.05,1), loc='upper left')
+    my_age_group = dfs[3][dfs[3]['state'] == 'Malaysia']
+    melted_age_group = pd.melt(my_age_group, id_vars=['date','year'], value_vars=['17-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', 'other'])
+    grouped_melted_age = melted_age_group.groupby(['variable','year'])['value'].sum().reset_index()
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x='year', y='value', hue='variable', data=grouped_melted_age, marker='o')
 
-plt.xticks(ticks=grouped_melted_age['year'].unique(), rotation=45)
+    plt.title('New Donors Trends by Age Group (2006-2024)')
+    plt.xlabel('Year')
+    plt.ylabel('Number of Donations')
+    plt.legend(title='Age Group', bbox_to_anchor=(1.05,1), loc='upper left')
 
-plt.savefig('newdonors.png')
+    plt.xticks(ticks=grouped_melted_age['year'].unique(), rotation=45)
+    plt.tight_layout()
+    plt.savefig('newdonors.png')
 ```
-![newdonors.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/newdonors.png)
+
+This Cohort Analysis shows the heatmap of blood donor retention rate from 2012 - 2024 where we find the retention rate anually
+
+
+```python
+def cohort_analysis():    
+    #filtered_regular = dfs[4][(dfs[4]['visit_date'] >= '2022-01-01') & (dfs[4]['visit_date'] <= '2024-01-01')]
+
+    def get_year(x):
+        return dt.datetime(x.year, 1, 1)
+
+    dfs[4]['BeginDate'] = dfs[4]['visit_date'].apply(get_year)
+
+    # create a column index with minimum visit date (first time donor donated)
+    dfs[4]['Cohort Year'] = dfs[4].groupby('donor_id')['BeginDate'].transform('min')
+
+    sorted_cohort = dfs[4].sort_values(by= ['donor_id','visit_date'], ascending = [True, True])
+
+    # create a date element function to get a series for substraction
+    def get_date_element(df, column):
+        day = df[column].dt.day
+        month = df[column].dt.month
+        year = df[column].dt.year
+        return day, month, year
+
+    # Get date element for out cohort and begin columns
+    _,_,Begin_Year = get_date_element(sorted_cohort,'BeginDate')
+    _,_,Cohort_Year = get_date_element(sorted_cohort,'Cohort Year')
+
+    # Create a cohort index
+    year_diff =  Begin_Year - Cohort_Year
+
+    sorted_cohort['CohortIndex'] = year_diff+1
+
+    # count the Donor ID by grouping by Cohort Month and Cohort Index
+    cohort_data = sorted_cohort.groupby(['Cohort Year','CohortIndex'])['donor_id'].apply(pd.Series.nunique).reset_index()
+
+    # Create a Pivot table
+    cohort_table = cohort_data.pivot(index='Cohort Year', columns=['CohortIndex'], values='donor_id')
+
+    # change index
+    cohort_table.index = cohort_table.index.strftime('%Y')
+
+    # Cohort Table for percentages
+    new_cohort_table = cohort_table.divide(cohort_table.iloc[:,0],axis=0)
+
+    # Create percentage visual
+    plt.figure(figsize=(21,10))
+    sns.heatmap(new_cohort_table, annot=True,cmap='magma',fmt='.2%')
+    plt.title('Donor Retention Rate from 2012 - 2024')
+    plt.tight_layout()
+    plt.savefig('cohortrend.png')
+```
+
+
+```python
+cohort_analysis()
+```
 
 For each of the asynchronous function to implement in telegram bot, each of the plot have individual function of their own. the plot functions are called in thorugh update and context parameters. Which represent about incoming update and the context of the bot. context.bot is used to send the saved plot and this function is saved so that we create a trigger word later.
 
@@ -313,10 +366,12 @@ async def mytrend(update, context):
     plt.close()
     last_updated_date = dfs[1]['date'].max().strftime("%Y-%m-%d")
     message = f"Malaysia trend data updated at: {last_updated_date}"
-    reason =  f"This graph shows the trend of blood donation number from 2006 until latest 2024 with added trendline to see increase in donation"
+    reason =  f"This graph shows the trend of blood donation number from 2006 until latest 2024"
+    reason2 =  f"The trendline indicates that the Number of blood donation can increase over the coming years"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("mytrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 ```
 
 
@@ -327,9 +382,11 @@ async def regtrend(update, context):
     last_updated_date = dfs[4]['visit_date'].max().strftime("%Y-%m-%d")
     message = f"Regular donor trend data updated at: {last_updated_date}"
     reason = f"This graph is showing regular donors trend among registered donors from 2012 to latest 2024. Assuming that 3 or more is considered as regular donation"
+    reason2 =  f"The percentage is increasing when compared to the previous year when we compare to the total regular donors"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("regtrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 ```
 
 
@@ -341,9 +398,11 @@ async def statetrend(update, context):
     last_updated_date = dfs[1]['date'].max().strftime("%Y-%m-%d")
     message = f"State trend data updated at: {last_updated_date}"
     reason = f"This graphs represents the % of donation per state from 2006 until latest 2024 with highest donors on top"
+    reason2 =  f"WPKL Outweighs other states interms of blood donation at 37.61%"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("statetrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 ```
 
 
@@ -355,9 +414,11 @@ async def hospitaltrend(update, context):
     last_updated_date = dfs[0]['date'].max().strftime("%Y-%m-%d")
     message = f"Hospital trend data updated at: {last_updated_date}"
     reason = f"This graphs represents the % of donation per hospital from 2006 until latest 2024 with highest donors on top"
+    reason2 =  f"Pusat Darah Negara Outweighs other facility interms of blood donation at 37.61%"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("hospitaltrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 ```
 
 
@@ -369,9 +430,27 @@ async def agetrend(update, context):
     last_updated_date = dfs[3]['date'].max().strftime("%Y-%m-%d")
     message = f"New donors age group data updated at: {last_updated_date}"
     reason = f"This graph represents the total donation of new donors in age group from 2006 until latest 2024"
+    reason2 =  f"This shows that new donors coming from 17-24 group compared to other age group"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("newdonors.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
+```
+
+
+```python
+async def cohorttrend(update, context):
+    
+    cohort_analysis()
+    plt.close()
+    last_updated_date = dfs[4]['visit_date'].max().strftime("%Y-%m-%d")
+    message = f"Cohort trend data updated at: {last_updated_date}"
+    reason =  f"This Cohort Analysis shows the heatmap of blood donor retention rate from 2012 - 2024"
+    reason2 =  f"The lighter shades indicates higher retention rate for each cohorts. We can see a drastic change when comparing on the 2nd year and 5th year"
+    await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("cohortrend.png", "rb"))
+    await context.bot.send_message(chat_id=update.message.chat_id, text=message)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 ```
 
 
@@ -436,6 +515,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("state", statetrend))
     app.add_handler(CommandHandler("hospital", hospitaltrend))
     app.add_handler(CommandHandler("newdonors", agetrend))
+    app.add_handler(CommandHandler("retention", cohorttrend))
     app.add_handler(CommandHandler("start", startcommand))
 
     app.add_error_handler(error)
@@ -443,4 +523,3 @@ if __name__ == "__main__":
     print('Polling...')
     app.run_polling() 
 ```
-![Telegram.png](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/Telegram.PNG)
