@@ -352,10 +352,6 @@ def cohort_analysis():
 ```
 
 
-```python
-cohort_analysis()
-```
-
 For each of the asynchronous function to implement in telegram bot, each of the plot have individual function of their own. the plot functions are called in thorugh update and context parameters. Which represent about incoming update and the context of the bot. context.bot is used to send the saved plot and this function is saved so that we create a trigger word later.
 
 
