@@ -1,7 +1,7 @@
 import requests # HTTP connection
 import pandas as pd # data manipulation
 import pyarrow.parquet as pq 
-from datetime import datetime
+import datetime  as dt
 
 
 import matplotlib.pyplot as plt # plotting library
@@ -249,6 +249,52 @@ def new_age_group_trend():
     plt.tight_layout()
     plt.savefig('newdonors.png')
 
+def cohort_analysis():    
+
+    def get_year(x):
+        return dt.datetime(x.year, 1, 1)
+
+    dfs[4]['BeginDate'] = dfs[4]['visit_date'].apply(get_year)
+
+    # create a column index with minimum visit date (first time donor donated)
+    dfs[4]['Cohort Year'] = dfs[4].groupby('donor_id')['BeginDate'].transform('min')
+
+    sorted_cohort = dfs[4].sort_values(by= ['donor_id','visit_date'], ascending = [True, True])
+
+    # create a date element function to get a series for substraction
+    def get_date_element(df, column):
+        day = df[column].dt.day
+        month = df[column].dt.month
+        year = df[column].dt.year
+        return day, month, year
+
+    # Get date element for out cohort and begin columns
+    _,_,Begin_Year = get_date_element(sorted_cohort,'BeginDate')
+    _,_,Cohort_Year = get_date_element(sorted_cohort,'Cohort Year')
+
+    # Create a cohort index
+    year_diff =  Begin_Year - Cohort_Year
+
+    sorted_cohort['CohortIndex'] = year_diff+1
+
+    # count the Donor ID by grouping by Cohort Month and Cohort Index
+    cohort_data = sorted_cohort.groupby(['Cohort Year','CohortIndex'])['donor_id'].apply(pd.Series.nunique).reset_index()
+
+    # Create a Pivot table
+    cohort_table = cohort_data.pivot(index='Cohort Year', columns=['CohortIndex'], values='donor_id')
+
+    # change index
+    cohort_table.index = cohort_table.index.strftime('%Y')
+
+    # Cohort Table for percentages
+    new_cohort_table = cohort_table.divide(cohort_table.iloc[:,0],axis=0)
+
+    # Create percentage visual
+    plt.figure(figsize=(21,10))
+    sns.heatmap(new_cohort_table, annot=True,cmap='magma',fmt='.2%')
+    plt.title('Donor Retention Rate from 2012 - 2024')
+    plt.tight_layout()
+    plt.savefig('cohortrend.png')
 
 
 # Commands
@@ -258,10 +304,12 @@ async def mytrend(update, context):
     plt.close()
     last_updated_date = dfs[1]['date'].max().strftime("%Y-%m-%d")
     message = f"Malaysia trend data updated at: {last_updated_date}"
-    reason =  f"This graph shows the trend of blood donation number from 2006 until latest 2024 with added trendline to see increase in donation"
+    reason =  f"This graph shows the trend of blood donation number from 2006 until latest 2024"
+    reason2 =  f"The trendline indicates that the Number of blood donation can increase over the coming years"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("mytrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 
 async def regtrend(update, context):
     donor_retention()
@@ -269,9 +317,11 @@ async def regtrend(update, context):
     last_updated_date = dfs[4]['visit_date'].max().strftime("%Y-%m-%d")
     message = f"Regular donor trend data updated at: {last_updated_date}"
     reason = f"This graph is showing regular donors trend among registered donors from 2012 to latest 2024. Assuming that 3 or more is considered as regular donation"
+    reason2 =  f"The percentage is increasing when compared to the previous year when we compar to the total regular donors"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("regtrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 
 async def statetrend(update, context):
     
@@ -280,9 +330,11 @@ async def statetrend(update, context):
     last_updated_date = dfs[1]['date'].max().strftime("%Y-%m-%d")
     message = f"State trend data updated at: {last_updated_date}"
     reason = f"This graphs represents the % of donation per state from 2006 until latest 2024 with highest donors on top"
+    reason2 =  f"WPKL Outweighs other states interms of blood donation at 37.61%"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("statetrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 
 async def hospitaltrend(update, context):
     
@@ -291,9 +343,11 @@ async def hospitaltrend(update, context):
     last_updated_date = dfs[0]['date'].max().strftime("%Y-%m-%d")
     message = f"Hospital trend data updated at: {last_updated_date}"
     reason = f"This graphs represents the % of donation per hospital from 2006 until latest 2024 with highest donors on top"
+    reason2 =  f"Pusat Darah Negara Outweighs other facility interms of blood donation at 37.61%"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("hospitaltrend.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 
 async def agetrend(update, context):
 
@@ -302,9 +356,24 @@ async def agetrend(update, context):
     last_updated_date = dfs[3]['date'].max().strftime("%Y-%m-%d")
     message = f"New donors age group data updated at: {last_updated_date}"
     reason = f"This graph represents the total donation of new donors in age group from 2006 until latest 2024"
+    reason2 =  f"This shows that new donors coming from 17-24 group compared to other age group"
     await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("newdonors.png", "rb"))
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
+
+async def cohorttrend(update, context):
+    
+    cohort_analysis()
+    plt.close()
+    last_updated_date = dfs[4]['visit_date'].max().strftime("%Y-%m-%d")
+    message = f"Cohort trend data updated at: {last_updated_date}"
+    reason =  f"This Cohort Analysis shows the heatmap of blood donor retention rate from 2022 - 2024"
+    reason2 =  f"The lighter shades indicates higher retention rate for each cohorts. We can see a drastic change when comparing on the 2nd year and 5th year"
+    await context.bot.send_photo(chat_id=update.message.chat_id, photo=open("cohortrend.png", "rb"))
+    await context.bot.send_message(chat_id=update.message.chat_id, text=message)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason)
+    await context.bot.send_message(chat_id=update.message.chat_id, text=reason2)
 
 async def startcommand(update, context):
 
@@ -314,6 +383,7 @@ async def startcommand(update, context):
     await context.bot.send_message(chat_id=update.message.chat_id, text=message)
     await context.bot.send_message(chat_id=update.message.chat_id, text=message2)
     await context.bot.send_message(chat_id=update.message.chat_id, text=message3)
+
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
@@ -357,6 +427,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("state", statetrend))
     app.add_handler(CommandHandler("hospital", hospitaltrend))
     app.add_handler(CommandHandler("newdonors", agetrend))
+    app.add_handler(CommandHandler("retention", cohorttrend))
     app.add_handler(CommandHandler("start", startcommand))
 
     # Messages
