@@ -133,6 +133,7 @@ def malaysia_trend_per_year():
     plt.savefig('mytrend.png')
 ```
 ![mytrend](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/mytrend.png)
+
 For donor retention, the aim is to find the percentage of regular donors who donate more than 3 times per year out of all the registered donors. This is to analyse how well Malaysia retains donors to regularly to donate blood. For this, column year and donor id are aggregated and finding the number of occurrences of each aggregate. From that, the percentage is calculated to find the rate for each year from 2012 until latest 2024.The dataset used in this analysis is from granular data
 
 
