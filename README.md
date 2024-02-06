@@ -34,7 +34,7 @@ BOT_TOKEN = '??????'
 BOT_USERNAME = '@alifnrzm_bot'
 ```
 
-Since the data is updated daily, using HTTP conector to ingest the data is a viable option as the script will easily callout the URL given and assign them accordingly to naming convention for ease of processing
+Since the data is updated daily, using HTTP connector to ingest the data is a viable option as the script will easily callout the URL given and assign them accordingly to naming convention for ease of processing
 
 
 ```python
