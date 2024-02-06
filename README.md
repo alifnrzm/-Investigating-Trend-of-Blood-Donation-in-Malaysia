@@ -1,6 +1,8 @@
 # Investigating Trend of Blood Donation in Malaysia
 
-This is a project of identifying trends of blood donation in Malaysia primarily from 2006 to latest 2024. The data is updated daily thus, this script will run automatically with the assistance of telegram bot. In this finding, regular donor rate also investigated from the year 2012 to 2024 latest. Mind that all process from data ingestion until reporting are done in Python using required libraries.There are 4 aggregated files in csv format while 1 granular data in parquet. 
+This is a project of identifying trends of blood donation in Malaysia primarily from 2006 to latest 2024. The data is updated daily thus, this script will run automatically with the assistance of telegram bot. 
+
+In this finding, regular donor rate also investigated from the year 2012 to 2024 latest. Mind that all process from data ingestion until reporting are done in Python using required libraries.There are 4 aggregated files in csv format while 1 granular data in parquet. 
 
 ## Data Ingestion and pre-processing
 
@@ -32,7 +34,7 @@ BOT_TOKEN = '??????'
 BOT_USERNAME = '@alifnrzm_bot'
 ```
 
-Since the data is updated daily, using HTTp conector to ingest the data is a viable option as the cript will easily callout the URL given and assign them accordingly to naming convention for ease of processing
+Since the data is updated daily, using HTTP conector to ingest the data is a viable option as the script will easily callout the URL given and assign them accordingly to naming convention for ease of processing
 
 
 ```python
@@ -78,7 +80,7 @@ def load_data(csv_urls = [], parquet_url=None):
 donations_by_facility_df, donations_by_state_df, new_donors_facility_df, new_donors_state_df, regular_donor_df = load_data()
 ```
 
-Using datetime, the dates for each dataframe is converted to date format and extracted year from the date to be used in analysis down the script
+Using datetime, the dates for each dataframe is converted to date format and extracted year from the date to be used in analysis down the script.
 
 
 ```python
@@ -103,9 +105,11 @@ dfs = clean_data(dfs)
 
 # Data transformation and Data visualisation
 
-In this section, transformation is done followed by visualisation group in to functions
+In this section, transformation is done followed by visualisation group in to functions.
 
-For the first plot, data from donation by state is called and aggregated by state and year to find the daily total sum. The aim is to find Malaysia's donation trend from 2006 until the latest 2024 year. a barplot is created to find the daily sum and a trendline is added to predict the data if it is trending upwards or downwards for 2024. The reason for using this particular dataset is because Malaysia is listed in the state column so easier to filter. The plotted graph is then saved as 'mytrend.png' which will be used to send out to the bot function later.
+For the first plot, data from donation by state is called and aggregated by state and year to find the daily total sum. The aim is to find Malaysia's donation trend from 2006 until the latest 2024 year. 
+
+A barplot is created to find the daily sum and a trendline is added to predict the data if it is trending upwards or downwards for 2024. The reason for using this particular dataset is because Malaysia is listed in the state column so easier to filter. The plotted graph is then saved as 'mytrend.png' which will be used to send out to the bot function later.
 
 
 ```python
@@ -134,7 +138,9 @@ def malaysia_trend_per_year():
 ```
 ![mytrend](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/mytrend.png)
 
-For donor retention, the aim is to find the percentage of regular donors who donate more than 3 times per year out of all the registered donors. This is to analyse how well Malaysia retains donors to regularly to donate blood. For this, column year and donor id are aggregated and finding the number of occurrences of each aggregate. From that, the percentage is calculated to find the rate for each year from 2012 until latest 2024.The dataset used in this analysis is from granular data
+For donor retention, the aim is to find the percentage of regular donors who donate more than 3 times per year out of all the registered donors. This is to analyse how well Malaysia retains donors to regularly to donate blood. 
+
+For this, column year and donor id are aggregated and finding the number of occurrences of each aggregate. From that, the percentage is calculated to find the rate for each year from 2012 until latest 2024.The dataset used in this analysis is from granular data
 
 
 ```python
@@ -199,7 +205,7 @@ def percentage_per_state():
 ```
 ![statetrend](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/statetrend.png)
 
-In this analysis, we are trying to find which hospital or facility contributed to the blood donation total from 2006 until latest 2024.we dive deeper and aggregate the facility based on their respective states. Similarly a horizontal bar plot is created with color coded bars based on their respective states.
+In this analysis, we are trying to find which hospital or facility contributed to the blood donation total from 2006 until latest 2024. We dive deeper and aggregate the facility based on their respective states. Similarly a horizontal bar plot is created with color coded bars based on their respective states.
 
 
 ```python
@@ -280,7 +286,7 @@ def percentage_per_hospital():
 ```
 ![hospitaltrend](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/hospitaltrend.png)
 
-This analysis is about finding the trend of new donors donation trend which is grouped by their age. We use pivot method to find their total value and plotted a line graph from 2006 until 2024
+This analysis is about finding the trend of new donors donation trend which is grouped by their age. We use pivot method to find their total value and plotted a line graph from 2006 until 2024.
 
 
 ```python
@@ -303,7 +309,7 @@ def new_age_group_trend():
 ```
 ![newdonors](https://github.com/alifnrzm/Investigating-Trend-of-Blood-Donation-in-Malaysia/blob/main/Plots/newdonors.png)
 
-This Cohort Analysis shows the heatmap of blood donor retention rate from 2012 - 2024 where we find the retention rate anually
+This Cohort Analysis shows the heatmap of blood donor retention rate from 2012 - 2024 where we find the retention rate anually.
 
 
 ```python
@@ -504,7 +510,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(response)
 ```
 
-This standalone program is what connects to the telegram bot where we construct an instance class. configure through the unique bot token and build it. CommandHandler is used to register a command linking to the respective function. So we have to make sure that both the script and bot command to be the same so that the bot will return the aynchrounous function. A polling loop for the bot is initiated so that it continuously check for new updates and respond to the commands.
+This standalone program is what connects to the telegram bot where we construct an instance class. configure through the unique bot token and build it. CommandHandler is used to register a command linking to the respective function. 
+
+So, we have to make sure that both the script and bot command to be the same so that the bot will return the aynchrounous function. A polling loop for the bot is initiated so that it continuously check for new updates and respond to the commands.
 
 
 ```python
