@@ -313,8 +313,7 @@ This Cohort Analysis shows the heatmap of blood donor retention rate from 2012 -
 
 
 ```python
-def cohort_analysis():    
-    #filtered_regular = dfs[4][(dfs[4]['visit_date'] >= '2022-01-01') & (dfs[4]['visit_date'] <= '2024-01-01')]
+def cohort_analysis():
 
     def get_year(x):
         return dt.datetime(x.year, 1, 1)
