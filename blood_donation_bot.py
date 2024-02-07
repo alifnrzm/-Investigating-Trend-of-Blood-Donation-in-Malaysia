@@ -1,4 +1,3 @@
-import requests # HTTP connection
 import pandas as pd # data manipulation
 import pyarrow.parquet as pq 
 import datetime  as dt
