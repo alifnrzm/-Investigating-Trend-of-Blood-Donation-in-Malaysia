@@ -10,7 +10,6 @@ Libraries imported are mainly used for ingesting, cleaning, transform, plot and 
 
 
 ```python
-import requests # HTTP connection
 import pandas as pd # data manipulation
 import pyarrow.parquet as pq 
 import datetime  as dt
